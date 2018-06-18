@@ -108,12 +108,15 @@ def install_package(tar_url, folder, md5_url='{tar_url}.md5',
     if remote_md5 != calc_md5(data_file):
         on_download()
         if isfile(data_file):
-            with tarfile.open(data_file) as tar:
-                for i in reversed(list(tar)):
-                    try:
-                        os.remove(join(folder, i.path))
-                    except OSError:
-                        pass
+            try:
+                with tarfile.open(data_file) as tar:
+                    for i in reversed(list(tar)):
+                        try:
+                            os.remove(join(folder, i.path))
+                        except OSError:
+                            pass
+            except (OSError, EOFError):
+                pass
 
         download_extract_tar(tar_url, folder, data_file)
         on_complete()
