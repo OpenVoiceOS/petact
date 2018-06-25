@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='petact',
-    version='0.1.1',
+    version='0.1.2',
     description='A package extraction tool',
     url='https://github.com/matthewscholefield/petact',
     author='Matthew Scholefield',
