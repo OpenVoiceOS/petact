@@ -1,9 +1,8 @@
 from setuptools import setup
-from petact import __version__
 
 setup(
     name='petact',
-    version=__version__,
+    version='0.1.1',
     description='A package extraction tool',
     url='https://github.com/matthewscholefield/petact',
     author='Matthew Scholefield',
