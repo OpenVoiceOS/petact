@@ -8,7 +8,7 @@ from tempfile import mkstemp
 
 from os import makedirs
 
-from requests import RequestException
+from urllib.error import URLError
 
 
 def calc_md5(filename):
@@ -103,7 +103,7 @@ def install_package(tar_url, folder, md5_url='{tar_url}.md5',
     md5_url = md5_url.format(tar_url=tar_url)
     try:
         remote_md5 = download(md5_url).decode('utf-8').split(' ')[0]
-    except (UnicodeDecodeError, RequestException):
+    except (UnicodeDecodeError, URLError):
         raise ValueError('Invalid MD5 url: ' + md5_url)
     if remote_md5 != calc_md5(data_file):
         on_download()
