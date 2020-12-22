@@ -1,10 +1,11 @@
 # OVOS skill installer
 
-download, extract and check for changes in github mycroft skills
+Skills can be installed from github branches or releases, from .zip or .tar.gz urls
 
 ## Usage
 
-Skills can be installed from github branches or releases, from .zip or .tar.gz files
+![](./github_branches.png)
+
 
 ```python
 from ovos_skill_installer import install_skill
@@ -24,8 +25,10 @@ assert updated == True
 
 updated = install_skill(url, folder, "skill-playback.zip")
 assert updated == False
+```
+![](./github_releases.png)
 
-
+```python
 # Using github releases
 
 url = "https://github.com/JarbasSkills/skill-wolfie/archive/v0.1.tar.gz"
@@ -45,5 +48,5 @@ assert updated == False
 ## Installation
 
 ```bash
-pip3 install ovos_skill_installer
+pip install ovos_skill_installer
 ```
