@@ -2,6 +2,8 @@
 
 Skills can be installed from github branches or releases, from .zip or .tar.gz urls
 
+This tool is meant to be used internally by [ovos_skills_manager](https://github.com/OpenVoiceOS/ovos_skill_manager), as an end user your probably should be using that and not this repository directly. 
+
 ## Usage
 
 ![](./github_branches.png)
@@ -50,3 +52,7 @@ assert updated == False
 ```bash
 pip install ovos_skill_installer
 ```
+
+## Credits
+
+The only reason this is a standalone package is to give proper attribution to [MatthewScholefield](https://github.com/MatthewScholefield), this work is adapted from his work on [petact](https://github.com/matthewscholefield/petact), thanks Matthew!
