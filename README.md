@@ -1,43 +1,49 @@
-# Petact
+# OVOS skill installer
 
-[![PyPI version](https://img.shields.io/pypi/v/petact.svg)](https://pypi.org/project/petact/)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/cc0574a2e4c64f60bece2a6b1caa2b0f)](https://www.codacy.com/app/MatthewScholefield/petact?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=MatthewScholefield/petact&amp;utm_campaign=Badge_Grade)
-[![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/matthewscholefield/petact.svg)](https://github.com/MatthewScholefield/petact/archive/master.zip)
-[![License](https://img.shields.io/github/license/matthewscholefield/petact.svg)](https://github.com/MatthewScholefield/petact/blob/master/LICENSE)
-
-*A package extraction tool for Python*
-
-Petact is a library used for installing and updating compressed
-tar files. When `install_package` is called, it downloads an md5 file
-and compares it with the md5 of the locally downloaded tar. If they
-are different, the old extracted files are deleted and the new tar
-is downloaded and extracted to the same place.
+download, extract and check for changes in github mycroft skills
 
 ## Usage
 
+Skills can be installed from github branches or releases, from .zip or .tar.gz files
+
 ```python
-from os.path import isdir
-from petact import install_package, download, download_extract_tar, calc_md5
+from ovos_skill_installer import install_skill
+
+folder = "extract_here"
+
+# using github branches
+
+url = "https://github.com/MycroftAI/skill-playback-control/archive/20.02.zip"
+updated = install_skill(url, folder, "skill-playback.zip")
+assert updated == True
+
+# should remove files from above
+url = "https://github.com/MycroftAI/skill-playback-control/archive/20.08.zip"
+updated = install_skill(url, folder, "skill-playback.zip")
+assert updated == True
+
+updated = install_skill(url, folder, "skill-playback.zip")
+assert updated == False
 
 
-install_package(
-    tar_url='http://mysite.com/binaries.tar.gz', folder='place/for/binaries',
-    md5_url='http://mysite.com/binaries.tar.gz.md5', 
-    on_download=lambda: print('Updating...'),
-    on_complete=lambda: print('Update Complete.')
-)
+# Using github releases
 
+url = "https://github.com/JarbasSkills/skill-wolfie/archive/v0.1.tar.gz"
+updated = install_skill(url, folder, "skill-wolfie.tar.gz")
+assert updated == True
 
-# Other utility functions
-words = download('http://mysite.com/words.txt').split(b' ')
-download('http://mysite.com/anotherfile.bin', 'anotherfile.bin')
-md5_str = calc_md5('anotherfile.bin')
-if not isdir('data'):
-    download_extract_tar('http://mysite.com/data.tar.gz', 'data')
+# should remove files from above
+url = "https://github.com/JarbasSkills/skill-wolfie/archive/v0.1UPDATE_TEST.tar.gz"
+updated = install_skill(url, folder, "skill-wolfie.tar.gz")
+assert updated == True
+
+updated = install_skill(url, folder, "skill-wolfie.tar.gz")
+assert updated == False
 ```
+
 
 ## Installation
 
 ```bash
-pip3 install petact
+pip3 install ovos_skill_installer
 ```

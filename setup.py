@@ -1,12 +1,12 @@
 from setuptools import setup
 
 setup(
-    name='petact',
-    version='0.1.2',
-    description='A package extraction tool',
-    url='https://github.com/matthewscholefield/petact',
-    author='Matthew Scholefield',
-    author_email='matthew331199@gmail.com',
+    name='ovos_skill_installer',
+    version='0.0.1',
+    description='Mycroft skill installer from .zip or .tar.gz urls',
+    url='https://github.com/OpenVoiceOS/ovos_skill_installer',
+    author='JarbasAi',
+    author_email='jarbasai@mailfence.com',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -24,12 +24,7 @@ setup(
         'Programming Language :: Python :: 3.6'
     ],
     keywords='tar extraction web download dependencies',
-    packages=['petact'],
-    install_requires=[],
+    packages=['ovos_skill_installer'],
+    install_requires=[]
 
-    entry_points={
-        'console_scripts': [
-            'petact=petact.petact:main',
-        ],
-    }
 )
