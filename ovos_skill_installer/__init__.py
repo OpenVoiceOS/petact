@@ -6,7 +6,7 @@ from os.path import join, basename, isdir, isfile, exists
 from tempfile import mkstemp
 import zipfile
 import shutil
-from os import makedirs
+from os import makedirs, listdir
 
 
 def calc_md5(filename):
@@ -56,7 +56,8 @@ def download(url, file=None):
             file.close()
 
 
-def download_extract_tar(tar_url, folder, tar_filename=''):
+def download_extract_tar(tar_url, folder, tar_filename='',
+                         skill_folder_name=None):
     """
     Download and extract the tar at the url to the given folder
 
@@ -64,6 +65,7 @@ def download_extract_tar(tar_url, folder, tar_filename=''):
         tar_url (str): URL of tar file to download
         folder (str): Location of parent directory to extract to. Doesn't have to exist
         tar_filename (str): Location to download tar. Default is to a temp file
+        skill_folder_name (str): rename extracted skill folder to this
     """
     try:
         makedirs(folder)
@@ -71,7 +73,7 @@ def download_extract_tar(tar_url, folder, tar_filename=''):
         if not isdir(folder):
             raise
     if not tar_filename:
-        fd, tar_filename= mkstemp('.tar.gz')
+        fd, tar_filename = mkstemp('.tar.gz')
         download(tar_url, os.fdopen(fd, 'wb'))
     else:
         download(tar_url, tar_filename)
@@ -79,8 +81,18 @@ def download_extract_tar(tar_url, folder, tar_filename=''):
     with tarfile.open(tar_filename) as tar:
         tar.extractall(path=folder)
 
+    if skill_folder_name:
+        with tarfile.open(tar_filename) as tar:
+            for p in tar.getnames():
+                original_folder = p.split("/")[0]
+                break
+        original_folder = join(folder, original_folder)
+        final_folder = join(folder, skill_folder_name)
+        shutil.move(original_folder, final_folder)
 
-def download_extract_zip(zip_url, folder, zip_filename=""):
+
+def download_extract_zip(zip_url, folder, zip_filename="",
+                         skill_folder_name=None):
     """
    Download and extract the zip at the url to the given folder
 
@@ -88,6 +100,7 @@ def download_extract_zip(zip_url, folder, zip_filename=""):
        zip_url (str): URL of zip file to download
        folder (str): Location of parent directory to extract to. Doesn't have to exist
        zip_filename (str): Location to download zip. Default is to a temp file
+       skill_folder_name (str): rename extracted skill folder to this
    """
     try:
         makedirs(folder)
@@ -103,6 +116,16 @@ def download_extract_zip(zip_url, folder, zip_filename=""):
     with zipfile.ZipFile(zip_filename, 'r') as zip_ref:
         zip_ref.extractall(folder)
 
+    if skill_folder_name:
+        with zipfile.ZipFile(zip_filename, 'r') as zip_ref:
+            for p in zip_ref.namelist():
+                original_folder = p.split("/")[0]
+                break
+
+        original_folder = join(folder, original_folder)
+        final_folder = join(folder, skill_folder_name)
+        shutil.move(original_folder, final_folder)
+
 
 def get_remote_md5(md5_url, file_url=None, data_file=None):
     try:
@@ -110,9 +133,12 @@ def get_remote_md5(md5_url, file_url=None, data_file=None):
     except Exception as e:
         pass
     if file_url:
-        #print("md5 url not available, need to download first!")
+        # print("md5 url not available, need to download first!")
         if not data_file:
-            ext = basename(file_url).split(".")[-1]
+            if file_url.endswith(".tar.gz"):
+                ext = ".tar.gz"
+            else:
+                ext = basename(file_url).split(".")[-1]
             fd, data_file = mkstemp(ext)
         download(file_url, data_file)
         return calc_md5(data_file), data_file
@@ -120,14 +146,17 @@ def get_remote_md5(md5_url, file_url=None, data_file=None):
         raise ValueError('Invalid MD5 url: ' + md5_url)
 
 
-def install_skill(url, folder, filename=None, md5_url='{url}.md5'):
+def install_skill(url, folder, filename=None, md5_url='{url}.md5',
+                  skill_folder_name=None):
     """
     Install or update a tar/zip package
 
     Args:
         url (str): URL of package to download
         folder (str): Location to extract to. Will be created if doesn't exist
+        filename (str): filename of downloaded tar/zip file
         md5_url (str): URL of md5 to use to check for updates
+        skill_folder_name (str): rename extracted skill folder to this
 
     Returns:
         bool: Whether the package was updated
@@ -136,20 +165,24 @@ def install_skill(url, folder, filename=None, md5_url='{url}.md5'):
         md5_url = md5_url.format(url=url)
 
     if url.endswith(".zip"):
-        return install_skill_from_zip(url, folder, filename, md5_url)
+        return install_skill_from_zip(url, folder, filename, md5_url,
+                                      skill_folder_name)
     else:
-        return install_skill_from_tar(url, folder, filename, md5_url)
+        return install_skill_from_tar(url, folder, filename, md5_url,
+                                      skill_folder_name)
 
 
 def install_skill_from_tar(tar_url, folder, filename=None,
-                           md5_url='{tar_url}.md5'):
+                           md5_url='{tar_url}.md5', skill_folder_name=None):
     """
     Install or update a tar package
 
     Args:
         tar_url (str): URL of package to download
         folder (str): Location to extract tar. Will be created if doesn't exist
+        filename (str): filename of downloaded tar file
         md5_url (str): URL of md5 to use to check for updates
+        skill_folder_name (str): rename extracted skill folder to this
 
     Returns:
         bool: Whether the package was updated
@@ -160,9 +193,13 @@ def install_skill_from_tar(tar_url, folder, filename=None,
     remote_md5, downloaded = get_remote_md5(md5_url, tar_url)
     filename = filename or basename(tar_url)
     data_file = join(folder, filename)
+    if skill_folder_name:
+        final_folder = join(folder, skill_folder_name)
     if remote_md5 != calc_md5(data_file):
+        original_folder = None
         # remove old files
         if isfile(data_file):
+            # check tar default folder
             try:
                 with tarfile.open(data_file) as tar:
                     for p in tar.getnames():
@@ -170,16 +207,30 @@ def install_skill_from_tar(tar_url, folder, filename=None,
             except (OSError, EOFError):
                 pass
 
-        # extract previously downloaded
+        # check and delete renamed folder if requested
+        if skill_folder_name and isdir(final_folder):
+            shutil.rmtree(final_folder, ignore_errors=True)
+
+        # extract already downloaded
         if downloaded:
             with tarfile.open(downloaded) as tar:
                 tar.extractall(path=folder)
-            # move file for md5 calculations
+                for p in tar.getnames():
+                    original_folder = p.split("/")[0]
+                    break
+
+            # move .tar.gz file for md5 calculations
             shutil.move(downloaded, data_file)
+
+            # move extracted to requested final dir
+            if skill_folder_name and original_folder:
+                shutil.move(join(folder, original_folder), final_folder)
 
         # download and extract
         else:
-            download_extract_tar(tar_url, folder, data_file)
+            download_extract_tar(tar_url, folder, data_file,
+                                 skill_folder_name=skill_folder_name)
+
         local_md5 = calc_md5(data_file)
         if remote_md5 != local_md5:
             raise ValueError('MD5 url does not match tar: ' + md5_url)
@@ -188,16 +239,16 @@ def install_skill_from_tar(tar_url, folder, filename=None,
 
 
 def install_skill_from_zip(zip_url, folder, filename=None,
-                           md5_url='{zip_url}.md5'):
+                           md5_url='{zip_url}.md5', skill_folder_name=None):
     """
     Install or update a zip package
 
     Args:
         zip_url (str): URL of package to download
         folder (str): Location to extract tar. Will be created if doesn't exist
+        filename (str): filename of downloaded zip file
         md5_url (str): URL of md5 to use to check for updates
-        on_download (Callable): Function that gets called when downloading a new update
-        on_complete (Callable): Function that gets called when a new download is complete
+        skill_folder_name (str): rename extracted skill folder to this
 
     Returns:
         bool: Whether the package was updated
@@ -208,23 +259,39 @@ def install_skill_from_zip(zip_url, folder, filename=None,
     remote_md5, downloaded = get_remote_md5(md5_url, zip_url)
     filename = filename or basename(zip_url)
     data_file = join(folder, filename)
+    if skill_folder_name:
+        final_folder = join(folder, skill_folder_name)
     if remote_md5 != calc_md5(data_file):
+        original_folder = None
         # remove old files
         if isfile(data_file):
             with zipfile.ZipFile(data_file, 'r') as zip_ref:
                 for p in zip_ref.namelist():
                     shutil.rmtree(join(folder, p), ignore_errors=True)
 
-        # extract previously downloaded
+        # check and delete renamed folder if requested
+        if skill_folder_name and isdir(final_folder):
+            shutil.rmtree(final_folder, ignore_errors=True)
+
+        # extract already downloaded
         if downloaded:
             with zipfile.ZipFile(downloaded, 'r') as zip_ref:
                 zip_ref.extractall(folder)
-            # move file for md5 calculations
+                for p in zip_ref.namelist():
+                    original_folder = p.split("/")[0]
+                    break
+
+            # move .zip file for md5 calculations
             shutil.move(downloaded, data_file)
+
+            # move extracted to requested final dir
+            if skill_folder_name and original_folder:
+                shutil.move(join(folder, original_folder), final_folder)
 
         # download and extract
         else:
-            download_extract_zip(zip_url, folder, data_file)
+            download_extract_zip(zip_url, folder, data_file,
+                                 skill_folder_name=skill_folder_name)
 
         local_md5 = calc_md5(data_file)
         if remote_md5 != local_md5:
