@@ -27,7 +27,7 @@ def calc_md5(filename):
     return hash_md5.hexdigest()
 
 
-def download(url, file=None):
+def download(url, file=None, github_token=None):
     """
     Pass file as a filename, open file object, or None to return the request bytes
 
@@ -37,7 +37,7 @@ def download(url, file=None):
              - Filename of output file
              - File opened in binary write mode
              - None: Return raw bytes instead
-
+        github_token (str): Optional github auth token
     Returns:
         Union[bytes, None]: Bytes of file if file is None
     """
@@ -46,7 +46,12 @@ def download(url, file=None):
     if isinstance(file, str):
         file = open(file, 'wb')
     try:
-        with urllib.request.urlopen(url) as response:
+        req = urllib.request.Request(url)
+        req.add_header("Accept", "application/vnd.github.v3.raw")
+        if github_token:
+            req.add_header("Authorization", f"token {github_token}")
+
+        with urllib.request.urlopen(req) as response:
             if file:
                 shutil.copyfileobj(response, file)
             else:
@@ -57,7 +62,7 @@ def download(url, file=None):
 
 
 def download_extract_tar(tar_url, folder, tar_filename='',
-                         skill_folder_name=None):
+                         skill_folder_name=None, github_token=None):
     """
     Download and extract the tar at the url to the given folder
 
@@ -66,6 +71,7 @@ def download_extract_tar(tar_url, folder, tar_filename='',
         folder (str): Location of parent directory to extract to. Doesn't have to exist
         tar_filename (str): Location to download tar. Default is to a temp file
         skill_folder_name (str): rename extracted skill folder to this
+        github_token (str): Optional github auth token
     """
     try:
         makedirs(folder)
@@ -74,9 +80,9 @@ def download_extract_tar(tar_url, folder, tar_filename='',
             raise
     if not tar_filename:
         fd, tar_filename = mkstemp('.tar.gz')
-        download(tar_url, os.fdopen(fd, 'wb'))
+        download(tar_url, os.fdopen(fd, 'wb'), github_token=github_token)
     else:
-        download(tar_url, tar_filename)
+        download(tar_url, tar_filename, github_token=github_token)
 
     with tarfile.open(tar_filename) as tar:
         tar.extractall(path=folder)
@@ -92,7 +98,7 @@ def download_extract_tar(tar_url, folder, tar_filename='',
 
 
 def download_extract_zip(zip_url, folder, zip_filename="",
-                         skill_folder_name=None):
+                         skill_folder_name=None, github_token=None):
     """
    Download and extract the zip at the url to the given folder
 
@@ -101,6 +107,7 @@ def download_extract_zip(zip_url, folder, zip_filename="",
        folder (str): Location of parent directory to extract to. Doesn't have to exist
        zip_filename (str): Location to download zip. Default is to a temp file
        skill_folder_name (str): rename extracted skill folder to this
+       github_token (str): Optional github auth token
    """
     try:
         makedirs(folder)
@@ -109,9 +116,9 @@ def download_extract_zip(zip_url, folder, zip_filename="",
             raise
     if not zip_filename:
         fd, zip_filename = mkstemp('.tar.gz')
-        download(zip_url, os.fdopen(fd, 'wb'))
+        download(zip_url, os.fdopen(fd, 'wb'), github_token=github_token)
     else:
-        download(zip_url, zip_filename)
+        download(zip_url, zip_filename, github_token=github_token)
 
     with zipfile.ZipFile(zip_filename, 'r') as zip_ref:
         zip_ref.extractall(folder)
@@ -127,9 +134,9 @@ def download_extract_zip(zip_url, folder, zip_filename="",
         shutil.move(original_folder, final_folder)
 
 
-def get_remote_md5(md5_url, file_url=None, data_file=None):
+def get_remote_md5(md5_url, file_url=None, data_file=None, github_token=None):
     try:
-        return download(md5_url).decode('utf-8').split(' ')[0], None
+        return download(md5_url, github_token=github_token).decode('utf-8').split(' ')[0], None
     except Exception as e:
         pass
     if file_url:
@@ -140,23 +147,24 @@ def get_remote_md5(md5_url, file_url=None, data_file=None):
             else:
                 ext = basename(file_url).split(".")[-1]
             fd, data_file = mkstemp(ext)
-        download(file_url, data_file)
+        download(file_url, data_file, github_token=github_token)
         return calc_md5(data_file), data_file
     else:
         raise ValueError('Invalid MD5 url: ' + md5_url)
 
 
 def install_skill(url, folder, filename=None, md5_url='{url}.md5',
-                  skill_folder_name=None):
+                  skill_folder_name=None, github_token=None):
     """
     Install or update a tar/zip package
 
     Args:
-        url (str): URL of package to download
+        url (str): Github API URL of package to download
         folder (str): Location to extract to. Will be created if doesn't exist
         filename (str): filename of downloaded tar/zip file
         md5_url (str): URL of md5 to use to check for updates
         skill_folder_name (str): rename extracted skill folder to this
+        github_token (str): Optional github auth token
 
     Returns:
         bool: Whether the package was updated
@@ -164,16 +172,16 @@ def install_skill(url, folder, filename=None, md5_url='{url}.md5',
     if "{url}" in md5_url:
         md5_url = md5_url.format(url=url)
 
-    if url.endswith(".zip"):
+    if url.endswith(".zip") or "/zipball/" in url:
         return install_skill_from_zip(url, folder, filename, md5_url,
-                                      skill_folder_name)
+                                      skill_folder_name, github_token)
     else:
         return install_skill_from_tar(url, folder, filename, md5_url,
-                                      skill_folder_name)
+                                      skill_folder_name, github_token)
 
 
 def install_skill_from_tar(tar_url, folder, filename=None,
-                           md5_url='{tar_url}.md5', skill_folder_name=None):
+                           md5_url='{tar_url}.md5', skill_folder_name=None, github_token=None):
     """
     Install or update a tar package
 
@@ -183,6 +191,7 @@ def install_skill_from_tar(tar_url, folder, filename=None,
         filename (str): filename of downloaded tar file
         md5_url (str): URL of md5 to use to check for updates
         skill_folder_name (str): rename extracted skill folder to this
+        github_token (str): Optional github auth token
 
     Returns:
         bool: Whether the package was updated
@@ -190,7 +199,7 @@ def install_skill_from_tar(tar_url, folder, filename=None,
     if "{tar_url}" in md5_url:
         md5_url = md5_url.format(tar_url=tar_url)
 
-    remote_md5, downloaded = get_remote_md5(md5_url, tar_url)
+    remote_md5, downloaded = get_remote_md5(md5_url, tar_url, github_token=github_token)
     filename = filename or basename(tar_url)
     data_file = join(folder, filename)
     if skill_folder_name:
@@ -229,7 +238,7 @@ def install_skill_from_tar(tar_url, folder, filename=None,
         # download and extract
         else:
             download_extract_tar(tar_url, folder, data_file,
-                                 skill_folder_name=skill_folder_name)
+                                 skill_folder_name=skill_folder_name, github_token=github_token)
 
         local_md5 = calc_md5(data_file)
         if remote_md5 != local_md5:
@@ -239,7 +248,7 @@ def install_skill_from_tar(tar_url, folder, filename=None,
 
 
 def install_skill_from_zip(zip_url, folder, filename=None,
-                           md5_url='{zip_url}.md5', skill_folder_name=None):
+                           md5_url='{zip_url}.md5', skill_folder_name=None, github_token=None):
     """
     Install or update a zip package
 
@@ -249,14 +258,14 @@ def install_skill_from_zip(zip_url, folder, filename=None,
         filename (str): filename of downloaded zip file
         md5_url (str): URL of md5 to use to check for updates
         skill_folder_name (str): rename extracted skill folder to this
-
+        github_token (str): Optional github auth token
     Returns:
         bool: Whether the package was updated
     """
     if "{zip_url}" in md5_url:
         md5_url = md5_url.format(zip_url=zip_url)
 
-    remote_md5, downloaded = get_remote_md5(md5_url, zip_url)
+    remote_md5, downloaded = get_remote_md5(md5_url, zip_url, github_token=github_token)
     filename = filename or basename(zip_url)
     data_file = join(folder, filename)
     if skill_folder_name:
@@ -291,7 +300,7 @@ def install_skill_from_zip(zip_url, folder, filename=None,
         # download and extract
         else:
             download_extract_zip(zip_url, folder, data_file,
-                                 skill_folder_name=skill_folder_name)
+                                 skill_folder_name=skill_folder_name, github_token=github_token)
 
         local_md5 = calc_md5(data_file)
         if remote_md5 != local_md5:
