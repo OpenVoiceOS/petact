@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='ovos_skill_installer',
-    version='0.0.2',
+    version='0.0.3',
     description='Mycroft skill installer from .zip or .tar.gz urls',
     url='https://github.com/OpenVoiceOS/ovos_skill_installer',
     author='JarbasAi',
@@ -23,8 +23,8 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6'
     ],
+    install_requires=["requests"],
     keywords='tar extraction web download dependencies',
-    packages=['ovos_skill_installer'],
-    install_requires=[]
+    packages=['ovos_skill_installer']
 
 )
