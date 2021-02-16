@@ -168,7 +168,7 @@ def install_skill(url, folder, filename=None, md5_url='{url}.md5',
     if "{url}" in md5_url:
         md5_url = md5_url.format(url=url)
 
-    if url.endswith(".zip"):
+    if url.endswith(".zip") or "zipball" in url and "github" in url:
         return install_skill_from_zip(url, folder, filename, md5_url,
                                       skill_folder_name, session=session)
     else:

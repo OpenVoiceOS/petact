@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='ovos_skill_installer',
-    version='0.0.3',
+    version='0.0.4',
     description='Mycroft skill installer from .zip or .tar.gz urls',
     url='https://github.com/OpenVoiceOS/ovos_skill_installer',
     author='JarbasAi',
