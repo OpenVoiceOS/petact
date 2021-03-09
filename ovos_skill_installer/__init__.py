@@ -251,10 +251,10 @@ def install_skill_from_tar(tar_url, folder, filename=None,
             download_extract_tar(tar_url, folder, data_file,
                                  skill_folder_name=skill_folder_name,
                                  session=session)
-
-        local_md5 = calc_md5(data_file)
-        if remote_md5 != local_md5:
-            raise ValueError('MD5 url does not match tar: ' + md5_url)
+        if not ignore_md5:
+            local_md5 = calc_md5(data_file)
+            if remote_md5 != local_md5:
+                raise ValueError('MD5 url does not match tar: ' + md5_url)
         return True
     return False
 
@@ -328,8 +328,9 @@ def install_skill_from_zip(zip_url, folder, filename=None,
                                  skill_folder_name=skill_folder_name,
                                  session=session)
 
-        local_md5 = calc_md5(data_file)
-        if remote_md5 != local_md5:
-            raise ValueError('MD5 url does not match zip: ' + md5_url)
+        if not ignore_md5:
+            local_md5 = calc_md5(data_file)
+            if remote_md5 != local_md5:
+                raise ValueError('MD5 url does not match zip: ' + md5_url)
         return True
     return False
