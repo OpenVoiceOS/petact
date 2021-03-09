@@ -151,7 +151,7 @@ def get_remote_md5(md5_url, file_url=None, data_file=None, session=None):
 
 
 def install_skill(url, folder, filename=None, md5_url='{url}.md5',
-                  skill_folder_name=None, session=None):
+                  skill_folder_name=None, session=None, ignore_md5=False):
     """
     Install or update a tar/zip package
 
@@ -161,6 +161,8 @@ def install_skill(url, folder, filename=None, md5_url='{url}.md5',
         filename (str): filename of downloaded tar/zip file
         md5_url (str): URL of md5 to use to check for updates
         skill_folder_name (str): rename extracted skill folder to this
+        session (requests.Session): a session to be reutilized
+        ignore_md5 (bool): ignore md5 hash and just replace existing skill
 
     Returns:
         bool: Whether the package was updated
@@ -178,7 +180,7 @@ def install_skill(url, folder, filename=None, md5_url='{url}.md5',
 
 def install_skill_from_tar(tar_url, folder, filename=None,
                            md5_url='{tar_url}.md5', skill_folder_name=None,
-                           session=None):
+                           session=None, ignore_md5=False):
     """
     Install or update a tar package
 
@@ -188,6 +190,8 @@ def install_skill_from_tar(tar_url, folder, filename=None,
         filename (str): filename of downloaded tar file
         md5_url (str): URL of md5 to use to check for updates
         skill_folder_name (str): rename extracted skill folder to this
+        session (requests.Session): a session to be reutilized
+        ignore_md5 (bool): ignore md5 hash and just replace existing skill
 
     Returns:
         bool: Whether the package was updated
@@ -195,14 +199,23 @@ def install_skill_from_tar(tar_url, folder, filename=None,
     if "{tar_url}" in md5_url:
         md5_url = md5_url.format(tar_url=tar_url)
 
-    remote_md5, downloaded = get_remote_md5(md5_url, tar_url, session=session)
     filename = filename or basename(tar_url)
     data_file = join(folder, filename)
-    need_to_download = False
     if skill_folder_name:
         final_folder = join(folder, skill_folder_name)
-        need_to_download = not exists(final_folder)
-    if remote_md5 != calc_md5(data_file) or need_to_download:
+
+    if ignore_md5:
+        downloaded = False
+        need_to_download = True
+    else:
+        remote_md5, downloaded = get_remote_md5(md5_url, tar_url,
+                                                session=session)
+        if skill_folder_name:
+            need_to_download = not exists(final_folder)
+        else:
+            need_to_download = remote_md5 != calc_md5(data_file)
+
+    if need_to_download:
         original_folder = None
         # remove old files
         if isfile(data_file):
@@ -215,7 +228,7 @@ def install_skill_from_tar(tar_url, folder, filename=None,
                 pass
 
         # check and delete renamed folder if requested
-        if skill_folder_name and isdir(final_folder):
+        if (ignore_md5 or skill_folder_name) and isdir(final_folder):
             shutil.rmtree(final_folder, ignore_errors=True)
 
         # extract already downloaded
@@ -248,7 +261,7 @@ def install_skill_from_tar(tar_url, folder, filename=None,
 
 def install_skill_from_zip(zip_url, folder, filename=None,
                            md5_url='{zip_url}.md5', skill_folder_name=None,
-                           session=None):
+                           session=None, ignore_md5=False):
     """
     Install or update a zip package
 
@@ -258,6 +271,8 @@ def install_skill_from_zip(zip_url, folder, filename=None,
         filename (str): filename of downloaded zip file
         md5_url (str): URL of md5 to use to check for updates
         skill_folder_name (str): rename extracted skill folder to this
+        session (requests.Session): a session to be reutilized
+        ignore_md5 (bool): ignore md5 hash calculations
 
     Returns:
         bool: Whether the package was updated
@@ -265,14 +280,22 @@ def install_skill_from_zip(zip_url, folder, filename=None,
     if "{zip_url}" in md5_url:
         md5_url = md5_url.format(zip_url=zip_url)
 
-    remote_md5, downloaded = get_remote_md5(md5_url, zip_url, session=session)
     filename = filename or basename(zip_url)
     data_file = join(folder, filename)
-    need_to_download = False
     if skill_folder_name:
         final_folder = join(folder, skill_folder_name)
-        need_to_download = not exists(final_folder)
-    if remote_md5 != calc_md5(data_file) or need_to_download:
+
+    if ignore_md5:
+        downloaded = False
+        need_to_download = True
+    else:
+        remote_md5, downloaded = get_remote_md5(md5_url, zip_url, session=session)
+        if skill_folder_name:
+            need_to_download = not exists(final_folder)
+        else:
+            need_to_download = remote_md5 != calc_md5(data_file)
+
+    if need_to_download:
         original_folder = None
         # remove old files
         if isfile(data_file):
@@ -281,7 +304,7 @@ def install_skill_from_zip(zip_url, folder, filename=None,
                     shutil.rmtree(join(folder, p), ignore_errors=True)
 
         # check and delete renamed folder if requested
-        if skill_folder_name and isdir(final_folder):
+        if (ignore_md5 or skill_folder_name) and isdir(final_folder):
             shutil.rmtree(final_folder, ignore_errors=True)
 
         # extract already downloaded
