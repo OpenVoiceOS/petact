@@ -8,7 +8,7 @@ import zipfile
 import requests
 import shutil
 from os import makedirs, listdir
-from typing import Union
+from typing import Optional, Union
 
 
 def calc_md5(filename:str) -> str:
@@ -29,13 +29,16 @@ def calc_md5(filename:str) -> str:
     return hash_md5.hexdigest()
 
 
-def download(url:str, file=None, session:requests.Session=None) -> bytes:
+def download(url:str,
+             file:Optional[Union[str, io]]=None,
+             session:Optional[requests.Session]=None) -> bytes:
     """
     Pass file as a filename, open file object, or None to return the request bytes
 
     Args:
         url (str): URL of file to download
-        file (Union[str, io, None]): One of the following:
+        file (str, io) (optional):
+            One of the following:
              - Filename of output file
              - File opened in binary write mode
              - None: Return raw bytes instead
@@ -61,9 +64,12 @@ def download(url:str, file=None, session:requests.Session=None) -> bytes:
             file.close()
 
 
-def download_extract_tar(tar_url:str, folder:str, tar_filename:str='',
-                         skill_folder_name:str=None, session:requests.Session=None):
-    """
+def download_extract_tar(tar_url:str,
+                         folder:str,
+                         tar_filename:str='',
+                         skill_folder_name:Optional[str]=None,
+                         session:Optional[requests.Session]=None):
+   """
     Download and extract the tar at the url to the given folder
 
     Args:
@@ -96,9 +102,12 @@ def download_extract_tar(tar_url:str, folder:str, tar_filename:str='',
         shutil.move(original_folder, final_folder)
 
 
-def download_extract_zip(zip_url:str, folder:str, zip_filename:str="",
-                         skill_folder_name:str=None, session:requests.Session=None):
-    """
+def download_extract_zip(zip_url:str,
+                         folder:str,
+                         zip_filename:str="",
+                         skill_folder_name:Optional[str]=None,
+                         session:Optional[requests.Session]=None):
+   """
    Download and extract the zip at the url to the given folder
 
    Args:
@@ -133,7 +142,10 @@ def download_extract_zip(zip_url:str, folder:str, zip_filename:str="",
         shutil.move(original_folder, final_folder)
 
 
-def get_remote_md5(md5_url:str, file_url=None, data_file=None, session=None) -> (str, Union[str, list]):
+def get_remote_md5(md5_url:str,
+                   file_url:Optional[str]=None,
+                   data_file:Optional[str]=None,
+                   session:Optional[requests.Session]=None) -> (str, Union[str, list]):
     try:
         if requests.get(md5_url).status_code == 200:
             return download(md5_url, session=session).decode('utf-8').split(' ')[0], None
@@ -153,8 +165,13 @@ def get_remote_md5(md5_url:str, file_url=None, data_file=None, session=None) -> 
         raise ValueError('Invalid MD5 url: ' + md5_url)
 
 
-def install_skill(url:str, folder:str, filename:str=None, md5_url:str='{url}.md5',
-                  skill_folder_name:str=None, session:requests.Session=None, ignore_md5:bool=False) -> bool:
+def install_skill(url:str,
+                  folder:str,
+                  filename:Optional[str]=None,
+                  md5_url:str='{url}.md5',
+                  skill_folder_name:Optional[str]=None,
+                  session:Optional[requests.Session]=None,
+                  ignore_md5:bool=False) -> bool:
     """
     Install or update a tar/zip package
 
@@ -181,9 +198,9 @@ def install_skill(url:str, folder:str, filename:str=None, md5_url:str='{url}.md5
                                       skill_folder_name, session=session)
 
 
-def install_skill_from_tar(tar_url:str, folder:str, filename:str=None,
-                           md5_url:str='{tar_url}.md5', skill_folder_name:str=None,
-                           session:requests.Session=None, ignore_md5:bool=False) -> bool:
+def install_skill_from_tar(tar_url:str, folder:str, filename:Optional[str]=None,
+                           md5_url:str='{tar_url}.md5', skill_folder_name:Optional[str]=None,
+                           session:Optional[requests.Session]=None,ignore_md5:bool=False) -> bool:
     """
     Install or update a tar package
 
@@ -262,9 +279,9 @@ def install_skill_from_tar(tar_url:str, folder:str, filename:str=None,
     return False
 
 
-def install_skill_from_zip(zip_url:str, folder:str, filename:str=None,
-                           md5_url:str='{zip_url}.md5', skill_folder_name:str=None,
-                           session:requests.Session=None, ignore_md5:bool=False) -> bool:
+def install_skill_from_zip(zip_url:str, folder:str, filename:Optional[str]=None,
+                           md5_url:str='{zip_url}.md5', skill_folder_name:Optional[str]=None,
+                           session:Optional[requests.Session]=None,ignore_md5:bool=False) -> bool:
     """
     Install or update a zip package
 
